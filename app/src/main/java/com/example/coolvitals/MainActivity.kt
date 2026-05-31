@@ -31,11 +31,12 @@ import com.presagetech.smartspectra.proto.MetricsProto.ExpressionType
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private companion object {
-        const val API_KEY = "YOUR_API_KEY"
+        const val API_KEY ="YOUR API KEY"
 
         val TEXT_PRIMARY = Color.WHITE
         val TEXT_MUTED = 0x80FFFFFF.toInt()
@@ -344,10 +345,21 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             resetMeasurementUi()
-            runCatching { sdk.start() }
+
+            val started = runCatching { sdk.start() }
                 .onFailure {
                     statusLabel.text = "Error: ${it.message ?: "Unknown"}"
                 }
+                .isSuccess
+
+            if (started) {
+                delay(60000)
+
+                if (sdk.processingStatus.value == ProcessingStatus.RUNNING) {
+                    runCatching { sdk.stop() }
+                    statusLabel.text = "Status: Auto-stopped"
+                }
+            }
         }
     }
 
